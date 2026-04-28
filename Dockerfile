@@ -7,13 +7,17 @@ RUN apk --no-cache add \
 
 WORKDIR /app
 
-COPY go.mod go.sum sim_dev/ ./
+COPY . . 
 
+# Download go-package dependency 
 RUN go mod download
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /sim_dev .
+# Build sim_dev
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /sim_dev ./sim_dev
 
 
+
+# Copy to simple minimalistic environment
 FROM alpine:latest
 
 RUN apk --no-cache add socat

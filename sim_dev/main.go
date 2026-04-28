@@ -1,41 +1,36 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"math/rand"
 	"os"
-	"os/exec"
-	"strconv"
 	"time"
+
+	emurobot "emurobot/shared"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tarm/serial"
 )
 
-var DEVICE_COUNT int
-var DEFAULT_SPEED int
+// Get environment variables
+var DEVICE_COUNT int = emurobot.GetEnvOrDefault[int]("DEVICE_COUNT", 1)
+var DEFAULT_SPEED int = emurobot.GetEnvOrDefault[int]("DEFAULT_SPEED", 9600)
 
 func main() {
-
-	var err1, err2 error
 
 	// Check permission
 	if os.Geteuid() != 0 {
 		log.Fatal("Root permissions are missing")
 	}
 
-	DEVICE_COUNT, err1 = strconv.Atoi(os.Getenv("DEVICE_COUNT"))
-	DEFAULT_SPEED, err2 = strconv.Atoi(os.Getenv("DEFAULT_SPEED"))
-
-	if err1 != nil || err2 != nil {
-		log.Panic("DEVICE_COUNT or DEFAULT_SPEED incorrect set:", err1, err2)
-	}
-
 	// Init device
 	for i := 0; i < DEVICE_COUNT; i++ {
-		dev := createDevice(i)
-		go loopRandomGenerate(dev)
+		// Create device
+		dev := fmt.Sprintf("/dev/ttyUSB%d", i)
+		input, _ := emurobot.CreateDevice(dev)
+
+		// Fill random data
+		go loopRandomGenerate(input)
 	}
 
 	// Run infinite loop
@@ -43,43 +38,10 @@ func main() {
 	}
 }
 
-func createDevice(num int) string {
-
-	// Configure args
-	args := []string{
-		fmt.Sprintf("PTY,link=/dev/ttySIM%d", num),
-		fmt.Sprintf("PTY,link=/dev/ttyUSB%d", num),
-	}
-
-	// Build command
-	cmd := exec.Command("socat", args...)
-
-	// Run handler in background
-	go cmdHandler(cmd)
-
-	return fmt.Sprintf("/dev/ttySIM%d", num)
-}
-
-func cmdHandler(cmd *exec.Cmd) {
-	var (
-		stdout bytes.Buffer
-		stderr bytes.Buffer
-	)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	cmd.StdinPipe()
-
-	err := cmd.Run()
-	if err != nil {
-		log.Fatalf("Command failed: %v \nStderr: %s", err, stderr.String())
-	}
-}
-
 func loopRandomGenerate(dev string) {
 
 	// Wait until devise is not exist
-	waitDevice(dev)
+	emurobot.WaitDeviceExist(dev)
 
 	// Config for opening port
 	outputConfig := serial.Config{
@@ -95,10 +57,6 @@ func loopRandomGenerate(dev string) {
 		log.Panic("Not open input port", err.Error())
 	}
 	defer output.Close()
-
-	// start-bit + data-bit + stop-bit
-	bitsPerByte := int(outputConfig.Size + 2)
-	timePerBit := time.Second / time.Duration(DEFAULT_SPEED)
 
 	// Main loop
 	for {
@@ -119,25 +77,7 @@ func loopRandomGenerate(dev string) {
 			log.Fatal(err)
 		}
 
-		// Delay calc: bits * time per bit
-		totalBits := count * bitsPerByte
-		delay := timePerBit * time.Duration(totalBits)
-		time.Sleep(delay)
-	}
-
-}
-
-func waitDevice(dev string) {
-	// Timeout
-	deadline := time.Now().Add(1 * time.Second)
-
-	// Wait unit device becomes available
-	for time.Now().Before(deadline) {
-		_, err := os.Stat(dev)
-		if err == nil {
-			break // Device is exist
-		}
-
-		time.Sleep(100 * time.Millisecond) // Pause 100 ms
+		// Serial-port speed emulation
+		emurobot.WaitSend(&outputConfig, count)
 	}
 }
