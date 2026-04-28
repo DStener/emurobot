@@ -1,0 +1,6 @@
+version: 1.0.0
+devices: 
+  - input: /dev/ttyUSB0
+    output: /dev/ttyUSB0_VIRT
+    speed: 9600
+    size: 8

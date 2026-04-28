@@ -1,0 +1,13 @@
+services:
+
+  # Just create device for simulate real Serial-port 
+  # with random output and 9600 b/s speed
+  sim_dev:
+    build: .
+    command: sim_dev
+    privileged: true
+    environment:
+      - DEVICE_COUNT=3
+      - DEFAULT_SPEED=9600
+    volumes:
+      - /dev:/dev:rw
