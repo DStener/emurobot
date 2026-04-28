@@ -60,6 +60,7 @@ func loopRandomGenerate(dev string) {
 
 	// Main loop
 	for {
+
 		// Printable buffer
 		var buffer []byte
 
@@ -71,11 +72,15 @@ func loopRandomGenerate(dev string) {
 			buffer = append(buffer, byte(rand.Intn(90)+32))
 		}
 
+		emurobot.KillRWMutex.RLock() // See shared/init.go
+
 		// Write buffer
 		_, err = output.Write(buffer)
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		emurobot.KillRWMutex.RUnlock() // See shared/init.go
 
 		// Serial-port speed emulation
 		emurobot.WaitSend(&outputConfig, count)
