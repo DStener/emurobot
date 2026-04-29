@@ -1,10 +1,8 @@
-package emuSerial
+package main
 
 import (
-	"math"
+	emurobot "emurobot/shared"
 	"os"
-	"strconv"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -25,7 +23,7 @@ type Device struct {
 	Size       int    `yaml:"size"`
 }
 
-func ReadConfig(path string) Config {
+func readConfig(path string) Config {
 	var out Config
 
 	// Read file
@@ -40,28 +38,9 @@ func ReadConfig(path string) Config {
 		log.Panic(err)
 	}
 
-	if !isSupportedVersion(out.Version, CURRENT_VERSION) {
+	if !emurobot.IsSupportedVersion(out.Version, CURRENT_VERSION) {
 		log.Errorf("Config file version %s not supported (current version %s)", out.Version, CURRENT_VERSION)
 	}
 
 	return out
-}
-
-func isSupportedVersion(current, required string) bool {
-	currentParts := strings.Split(current, ".")
-	requiredParts := strings.Split(required, ".")
-
-	// Get min len version
-	min := int(math.Min(float64(len(currentParts)), float64(len(requiredParts))))
-
-	for i := 0; i < min; i++ {
-		currentNum, _ := strconv.Atoi(currentParts[i])
-		requiredNum, _ := strconv.Atoi(requiredParts[i])
-
-		if currentNum > requiredNum {
-			return false
-		}
-	}
-
-	return true
 }

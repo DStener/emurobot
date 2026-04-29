@@ -9,5 +9,6 @@ services:
     environment:
       - DEVICE_COUNT=3
       - DEFAULT_SPEED=9600
+      - TIME_DILATION=600 # for debug
     volumes:
       - /dev:/dev:rw

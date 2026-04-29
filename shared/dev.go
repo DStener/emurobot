@@ -27,12 +27,10 @@ func cmdHandler(cmd *exec.Cmd) {
 	addKillMeCmd(cmd) // See shared/init.go
 
 	err := cmd.Run()
-	KillRWMutex.RLock() // See shared/init.go
 
 	if err != nil {
 		log.Fatalf("Cmd error: %v \nStderr: %s", err, stderr.String())
 	}
-	KillRWMutex.RUnlock() // See shared/init.go
 }
 
 func CreateDevice(dev string) (string, string) {

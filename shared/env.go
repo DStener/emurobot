@@ -1,11 +1,33 @@
 package emurobot
 
 import (
+	"math"
 	"os"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
+
+// Check that current version lower than required
+func IsSupportedVersion(current, required string) bool {
+	currentParts := strings.Split(current, ".")
+	requiredParts := strings.Split(required, ".")
+
+	// Get min len version
+	min := int(math.Min(float64(len(currentParts)), float64(len(requiredParts))))
+
+	for i := 0; i < min; i++ {
+		currentNum, _ := strconv.Atoi(currentParts[i])
+		requiredNum, _ := strconv.Atoi(requiredParts[i])
+
+		if currentNum > requiredNum {
+			return false
+		}
+	}
+
+	return true
+}
 
 // Return environment or default value
 func GetEnvOrDefault[T any](key string, value T) T {
@@ -21,6 +43,8 @@ func GetEnvOrDefault[T any](key string, value T) T {
 
 	// Convert to support type
 	switch any(out).(type) {
+	case string:
+		return any(str).(T)
 	case int:
 		i, err := strconv.Atoi(str)
 		if err != nil {

@@ -17,9 +17,6 @@ import (
  * to manually send SIGINT to each cmd
  */
 
-// Mutex for work another program logic
-var KillRWMutex sync.RWMutex
-
 // Mutex for work with cmdList
 var listRWMutex sync.RWMutex
 
@@ -32,6 +29,20 @@ func addKillMeCmd(cmd *exec.Cmd) {
 	listRWMutex.Unlock()
 }
 
+var once sync.Once
+
+func killAll() {
+
+	listRWMutex.RLock()
+	for _, cmd := range cmdList {
+		log.Debugf("Kill cmd: %d", cmd.Process.Pid)
+		cmd.Process.Signal(syscall.SIGINT)
+	}
+	listRWMutex.RUnlock()
+
+	os.Exit(0)
+}
+
 func waitKill() {
 	// Create chan for signal
 	sigChan := make(chan os.Signal, 1)
@@ -41,23 +52,14 @@ func waitKill() {
 	// Infinite loop
 	for {
 		<-sigChan
-
-		KillRWMutex.Lock()
-		listRWMutex.RLock()
-
-		for _, cmd := range cmdList {
-			log.Debugf("Kill cmd: %d", cmd.Process.Pid)
-			cmd.Process.Signal(syscall.SIGINT)
-		}
-
-		os.Exit(0)
-
-		listRWMutex.RUnlock()
-		KillRWMutex.Unlock()
-
+		killAll()
 	}
 }
 
 func init() {
+
+	// Set correct exit handler
+	log.RegisterExitHandler(killAll)
+
 	go waitKill()
 }
