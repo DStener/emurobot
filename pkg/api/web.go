@@ -57,7 +57,6 @@ func messageHandler(response http.ResponseWriter, request *http.Request) {
 	// Send response
 	json.NewEncoder(response).Encode(confirmation)
 }
-
 func SendCommand(command string, args []string) (string, error) {
 
 	// Send to server

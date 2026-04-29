@@ -1,15 +1,38 @@
 package main
 
 import (
-	emurobot "emurobot/shared"
 	"io"
 	"time"
+
+	emurobot "emurobot/shared"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tarm/serial"
 )
 
+type Dump struct {
+	Device string   `json:"dev"`
+	Speed  int      `json:"speed"`
+	Size   int      `json:"size"`
+	Dump   [][]byte `json:"dump"`
+}
+
+// device: Dump
+var logs = make(map[string]*Dump)
+
+func addDevToLog(dev Device) {
+	logs[dev.Output] = &Dump{
+		Device: dev.Output,
+		Speed:  dev.Speed,
+		Size:   dev.Size,
+		Dump:   make([][]byte, 0),
+	}
+}
+
 func runGhostCopy(dev Device) {
+
+	// Init log structure
+	addDevToLog(dev)
 
 	// Wait until devise is not exist
 	emurobot.WaitDeviceExist(dev.GhostInput)
@@ -62,6 +85,15 @@ func runGhostCopy(dev Device) {
 		// Just pass iteration
 		if n == 0 {
 			continue
+		}
+
+		// LOGGER
+		if FLAG_IS_RECORDING {
+			dump := logs[dev.Output]
+			if dump == nil {
+				log.Fatal("Bad memory access r374893y9364893y489346")
+			}
+			dump.Dump = append(dump.Dump, stream[:n])
 		}
 
 		// Write to ghost port
