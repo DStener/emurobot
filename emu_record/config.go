@@ -1,8 +1,9 @@
 package main
 
 import (
-	emurobot "emurobot/shared"
 	"os"
+
+	api "emurobot/pkg/api"
 
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -38,7 +39,7 @@ func readConfig(path string) Config {
 		log.Panic(err)
 	}
 
-	if !emurobot.IsSupportedVersion(out.Version, CURRENT_VERSION) {
+	if !api.IsSupportedVersion(out.Version, CURRENT_VERSION) {
 		log.Errorf("Config file version %s not supported (current version %s)", out.Version, CURRENT_VERSION)
 	}
 

@@ -17,6 +17,8 @@ services:
     build: .
     command: emu_record
     privileged: true
+    ports:
+      - 7000:7000
     environment:
       - EMU_CONFIG_PATH=/etc/example_config.yaml
     depends_on:

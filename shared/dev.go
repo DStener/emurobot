@@ -7,11 +7,13 @@ import (
 	"os/exec"
 	"time"
 
+	api "emurobot/pkg/api"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/tarm/serial"
 )
 
-var TIME_DILATION int = GetEnvOrDefault[int]("TIME_DILATION", 1)
+var TIME_DILATION int = api.GetEnvOrDefault[int]("TIME_DILATION", 1)
 
 // Special cmd handler for socat
 func cmdHandler(cmd *exec.Cmd) {

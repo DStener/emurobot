@@ -8,13 +8,15 @@ import (
 
 	emurobot "emurobot/shared"
 
+	api "emurobot/pkg/api"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/tarm/serial"
 )
 
 // Get environment variables
-var DEVICE_COUNT int = emurobot.GetEnvOrDefault[int]("DEVICE_COUNT", 1)
-var DEFAULT_SPEED int = emurobot.GetEnvOrDefault[int]("DEFAULT_SPEED", 9600)
+var DEVICE_COUNT int = api.GetEnvOrDefault[int]("DEVICE_COUNT", 1)
+var DEFAULT_SPEED int = api.GetEnvOrDefault[int]("DEFAULT_SPEED", 9600)
 
 func main() {
 	// Check permission

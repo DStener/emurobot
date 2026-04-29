@@ -1,4 +1,4 @@
-package emurobot
+package emurobot_api
 
 import (
 	"math"
