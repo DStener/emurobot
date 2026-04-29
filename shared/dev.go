@@ -11,6 +11,8 @@ import (
 	"github.com/tarm/serial"
 )
 
+var TIME_DILATION int = GetEnvOrDefault[int]("TIME_DILATION", 1)
+
 // Special cmd handler for socat
 func cmdHandler(cmd *exec.Cmd) {
 	var (
@@ -72,6 +74,6 @@ func WaitDeviceExist(dev string) {
 func WaitSend(port *serial.Config, bytes int) {
 	sizeByte := int(port.StopBits) + int(port.Size)
 	timePerBit := time.Second / time.Duration(port.Baud)
-	delay := timePerBit * time.Duration(sizeByte*bytes)
+	delay := timePerBit * time.Duration(sizeByte*bytes) * time.Duration(TIME_DILATION)
 	time.Sleep(delay)
 }
