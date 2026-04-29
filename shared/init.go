@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -20,23 +21,49 @@ import (
 // Mutex for work with cmdList
 var listRWMutex sync.RWMutex
 
-var cmdList []*exec.Cmd
-
-// Add cmd to the sheet to be destroyed
-func addKillMeCmd(cmd *exec.Cmd) {
-	listRWMutex.Lock()
-	cmdList = append(cmdList, cmd)
-	listRWMutex.Unlock()
+type Record struct {
+	cmd  *exec.Cmd
+	devs []string
 }
 
+var cmdList []Record
+
 var once sync.Once
+
+// Add cmd to the sheet to be destroyed
+func addKillMeCmd(cmd *exec.Cmd, files []string) {
+	listRWMutex.Lock()
+	cmdList = append(cmdList, Record{cmd, files})
+	listRWMutex.Unlock()
+
+}
+
+func waitNonExist(dev string) {
+	deadline := time.Now().Add(1 * time.Second)
+
+	// Wait unit device becomes available
+	for time.Now().Before(deadline) {
+		_, err := os.Stat(dev)
+		if err != nil {
+			break // Device is non-exist
+		}
+
+		time.Sleep(100 * time.Millisecond) // Pause 100 ms
+	}
+}
 
 func killAll() {
 
 	listRWMutex.RLock()
-	for _, cmd := range cmdList {
-		log.Debugf("Kill cmd: %d", cmd.Process.Pid)
-		cmd.Process.Signal(syscall.SIGINT)
+
+	for _, rec := range cmdList {
+		log.Debugf("Kill cmd: %d", rec.cmd.Process.Pid)
+		rec.cmd.Process.Signal(syscall.SIGINT)
+
+		// Wait while device is deleted
+		for _, dev := range rec.devs {
+			waitNonExist(dev)
+		}
 	}
 	listRWMutex.RUnlock()
 

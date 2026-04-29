@@ -24,8 +24,6 @@ func cmdHandler(cmd *exec.Cmd) {
 
 	cmd.StdinPipe()
 
-	addKillMeCmd(cmd) // See shared/init.go
-
 	err := cmd.Run()
 
 	if err != nil {
@@ -46,6 +44,7 @@ func CreateDevice(dev string) (string, string) {
 
 	// Build command
 	cmd := exec.Command("socat", args...)
+	addKillMeCmd(cmd, []string{input, output}) // See shared/init.go
 
 	// Run handler in background
 	go cmdHandler(cmd)

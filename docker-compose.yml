@@ -12,3 +12,15 @@ services:
       - TIME_DILATION=600 # for debug
     volumes:
       - /dev:/dev:rw
+  
+  emu_record:
+    build: .
+    command: emu_record
+    privileged: true
+    environment:
+      - EMU_CONFIG_PATH=/etc/example_config.yaml
+    depends_on:
+      - sim_dev
+    volumes:
+      - ./example_config.yaml:/etc/example_config.yaml # config path  
+      - /dev:/dev:rw

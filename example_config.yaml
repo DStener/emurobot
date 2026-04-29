@@ -4,3 +4,11 @@ devices:
     output: /dev/ttyUSB0_VIRT
     speed: 9600
     size: 8
+  - input: /dev/ttyUSB1
+    output: /dev/ttyUSB1_VIRT
+    speed: 9600
+    size: 8
+  - input: /dev/ttyUSB2
+    output: /dev/ttyUSB2_VIRT
+    speed: 9600
+    size: 8
