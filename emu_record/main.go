@@ -12,19 +12,14 @@ import (
 var FLAG_IS_RECORDING bool = false
 
 func StartRecord(args []string) (string, error) {
-
 	FLAG_IS_RECORDING = true
 
 	return "OK", nil
 }
 
 func StopRecord(args []string) (string, error) {
-
 	FLAG_IS_RECORDING = false
-
-	for _, dump := range logs {
-		log.Info(dump)
-	}
+	emurobot.SaveDumps()
 
 	return "OK", nil
 }

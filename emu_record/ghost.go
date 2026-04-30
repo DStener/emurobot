@@ -10,29 +10,10 @@ import (
 	"github.com/tarm/serial"
 )
 
-type Dump struct {
-	Device string   `json:"dev"`
-	Speed  int      `json:"speed"`
-	Size   int      `json:"size"`
-	Dump   [][]byte `json:"dump"`
-}
-
-// device: Dump
-var logs = make(map[string]*Dump)
-
-func addDevToLog(dev Device) {
-	logs[dev.Output] = &Dump{
-		Device: dev.Output,
-		Speed:  dev.Speed,
-		Size:   dev.Size,
-		Dump:   make([][]byte, 0),
-	}
-}
-
 func runGhostCopy(dev Device) {
 
 	// Init log structure
-	addDevToLog(dev)
+	entry := emurobot.InitDevLog(dev.Output, dev.Speed, dev.Size)
 
 	// Wait until devise is not exist
 	emurobot.WaitDeviceExist(dev.GhostInput)
@@ -72,6 +53,8 @@ func runGhostCopy(dev Device) {
 	for {
 		var n int
 
+		start := time.Now()
+
 		// Read from real port
 		n, err = input.Read(stream)
 
@@ -89,11 +72,18 @@ func runGhostCopy(dev Device) {
 
 		// LOGGER
 		if FLAG_IS_RECORDING {
-			dump := logs[dev.Output]
-			if dump == nil {
-				log.Fatal("Bad memory access r374893y9364893y489346")
+			// Create log event
+			event := emurobot.LogEvent{
+				Time:  uint32(time.Since(start).Microseconds()),
+				Bytes: stream[:n],
 			}
-			dump.Dump = append(dump.Dump, stream[:n])
+
+			// If this is the first record, then the time is null.
+			if len(entry.Events) == 0 {
+				event.Time = 0
+			}
+
+			entry.Events = append(entry.Events, event)
 		}
 
 		// Write to ghost port

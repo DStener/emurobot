@@ -20,9 +20,11 @@ services:
     ports:
       - 7000:7000
     environment:
-      - EMU_CONFIG_PATH=/etc/example_config.yaml
+      - EMU_SIGNAL_ADDRESS=:7000
+      - EMU_CONFIG_PATH=/app/example_config.yaml
+      - EMU_DUMPS_DIR=/app/dumps
     depends_on:
       - sim_dev
     volumes:
-      - ./example_config.yaml:/etc/example_config.yaml # config path  
+      - ./:/app:rw  
       - /dev:/dev:rw
