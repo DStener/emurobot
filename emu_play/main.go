@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	api "emurobot/pkg/api"
@@ -9,23 +10,16 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var FLAG_IS_RECORDING bool = false
+var Config emurobot.Config
 
-func StartRecord(args []string) (string, error) {
-	FLAG_IS_RECORDING = true
-
-	return "OK", nil
-}
-
-func StopRecord(args []string) (string, error) {
-	FLAG_IS_RECORDING = false
-	emurobot.SaveDumps()
-
-	return "OK", nil
+func PlayRecord(args []string) (string, error) {
+	if len(args) < 1 {
+		return "ERROR", fmt.Errorf("Incorrect args:", args)
+	}
+	return InitPlayer(args[0])
 }
 
 func main() {
-
 	// Check permission
 	if os.Geteuid() != 0 {
 		log.Fatal("Root permissions are missing")
@@ -34,20 +28,16 @@ func main() {
 	go api.InitServer()
 
 	// Connect to signals
-	api.Connect(api.CMD_START_RECORD, StartRecord)
-	api.Connect(api.CMD_STOP_RECORD, StopRecord)
+	api.Connect(api.CMD_PLAY_RECORD, PlayRecord)
 
 	// Load config
 	path := api.GetEnvOrDefault[string]("EMU_CONFIG_PATH", "/etc/emu_config.yaml")
-	config := emurobot.ReadConfig(path)
+	Config = emurobot.ReadConfig(path)
 
-	for _, dev := range config.Devices {
+	for _, dev := range Config.Devices {
 		// Create device
 		input, _ := emurobot.CreateDevice(dev.Output)
 		dev.GhostInput = input
-
-		// Run main logic
-		go runGhostCopy(dev)
 	}
 
 	for {

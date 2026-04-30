@@ -1,4 +1,4 @@
-package main
+package emurobot
 
 import (
 	"os"
@@ -24,7 +24,7 @@ type Device struct {
 	Size       int    `yaml:"size"`
 }
 
-func readConfig(path string) Config {
+func ReadConfig(path string) Config {
 	var out Config
 
 	// Read file

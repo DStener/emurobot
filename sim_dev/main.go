@@ -90,6 +90,8 @@ func loopRandomGenerate(dev string, dupl string) {
 			buffer = append(buffer, byte(rand.Intn(90)+32))
 		}
 
+		buffer = append(buffer, '\n')
+
 		// Write buffer
 		_, err = output.Write(buffer)
 		if err != nil {

@@ -1,0 +1,14 @@
+services:
+  emu_play:
+    build: .
+    command: emu_play
+    privileged: true
+    ports:
+      - 7000:7000
+    environment:
+      - EMU_SIGNAL_ADDRESS=:7000
+      - EMU_CONFIG_PATH=/app/example_config.yaml
+      - EMU_DUMPS_DIR=/app/dumps
+    volumes:
+      - ./:/app:rw  
+      - /dev:/dev:rw

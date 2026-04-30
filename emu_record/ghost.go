@@ -10,14 +10,18 @@ import (
 	"github.com/tarm/serial"
 )
 
-func runGhostCopy(dev Device) {
+func runGhostCopy(dev emurobot.Device) {
 
 	// Init log structure
-	entry := emurobot.InitDevLog(dev.Output, dev.Speed, dev.Size)
+	dump := emurobot.InitDevLog(dev)
 
 	// Wait until devise is not exist
-	emurobot.WaitDeviceExist(dev.GhostInput)
-	emurobot.WaitDeviceExist(dev.Output)
+	errIn := emurobot.WaitDeviceExist(dev.GhostInput)
+	errOut := emurobot.WaitDeviceExist(dev.Output)
+
+	if errIn != nil || errOut != nil {
+		log.Error(errIn, errOut)
+	}
 
 	// Create configs
 	inputConfig := serial.Config{
@@ -57,34 +61,21 @@ func runGhostCopy(dev Device) {
 
 		// Read from real port
 		n, err = input.Read(stream)
-
-		if err != nil && err == io.EOF {
-			continue
-		}
 		if err != nil {
+			// If the buffer does nоt print anything, just wait.
+			if err == io.EOF {
+				continue
+			}
 			log.Fatalf("Read error: %s", err)
 		}
 
-		// Just pass iteration
-		if n == 0 {
-			continue
-		}
-
-		// LOGGER
-		if FLAG_IS_RECORDING {
-			// Create log event
-			event := emurobot.LogEvent{
-				Time:  uint32(time.Since(start).Microseconds()),
-				Bytes: stream[:n],
-			}
-
-			// If this is the first record, then the time is null.
-			if len(entry.Events) == 0 {
-				event.Time = 0
-			}
-
-			entry.Events = append(entry.Events, event)
-		}
+		// Event logging
+		emurobot.AddEvent(
+			dump,
+			string(stream[:n]),
+			time.Since(start),
+			FLAG_IS_RECORDING,
+		)
 
 		// Write to ghost port
 		n, err = ghost.Write(stream[:n])

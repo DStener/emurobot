@@ -54,7 +54,7 @@ func CreateDevice(dev string) (string, string) {
 	return input, output
 }
 
-func WaitDeviceExist(dev string) {
+func WaitDeviceExist(dev string) error {
 	// Timeout
 	deadline := time.Now().Add(1 * time.Second)
 
@@ -62,11 +62,13 @@ func WaitDeviceExist(dev string) {
 	for time.Now().Before(deadline) {
 		_, err := os.Stat(dev)
 		if err == nil {
-			break // Device is exist
+			return nil
 		}
 
 		time.Sleep(100 * time.Millisecond) // Pause 100 ms
 	}
+
+	return fmt.Errorf("Timeout wait device exist: %s", dev)
 }
 
 // Serial-port speed emulation

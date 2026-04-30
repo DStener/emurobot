@@ -1,3 +1,5 @@
+github.com/floscodes/golang-ringbuffer v0.0.0-20220922143252-ece21492664f h1:dBB/LPfxLI+k7KG7Wa6ROIVSx6uou/J3T/XFw1yLDcg=
+github.com/floscodes/golang-ringbuffer v0.0.0-20220922143252-ece21492664f/go.mod h1:0xiocpRoBwRfi51dZbEbEIjv0NnhgnknSVxuMEE0Gj4=
 github.com/sirupsen/logrus v1.9.4 h1:TsZE7l11zFCLZnZ+teH4Umoq5BhEIfIzfRDZ1Uzql2w=
 github.com/sirupsen/logrus v1.9.4/go.mod h1:ftWc9WdOfJ0a92nsE2jF5u5ZwH8Bv2zdeOC42RjbV2g=
 github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 h1:UyzmZLoiDWMRywV4DUYb9Fbt8uiOSooupjTq10vpvnU=
