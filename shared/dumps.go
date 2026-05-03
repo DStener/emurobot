@@ -26,8 +26,8 @@ type LogEvent struct {
 	Data string        `json:"data"`
 }
 
-var dumps []*LogDump
-var buffers map[string]*rb.RingBuffer
+var dumps = make([]*LogDump, 0)
+var buffers = make(map[string]*rb.RingBuffer)
 
 var DUMPS_DIR = api.GetEnvOrDefault[string]("EMU_DUMPS_DIR", "/var/log/emudump")
 var BUFFER_SIZE = api.GetEnvOrDefault[uint]("EMU_BUFFER_SIZE", 5)

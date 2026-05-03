@@ -1,6 +1,6 @@
 module emurobot
 
-go 1.25.0
+go 1.22.2
 
 require (
 	github.com/floscodes/golang-ringbuffer v0.0.0-20220922143252-ece21492664f // indirect
