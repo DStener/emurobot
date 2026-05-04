@@ -1,0 +1,11 @@
+# ...
+
+emurobot:
+  buffer_size: 18
+  serial: 
+    - input: /dev/ttyUSB0
+      output: /dev/ttyUSB0_VIRT
+      speed: 9600
+      size: 8
+
+# ...

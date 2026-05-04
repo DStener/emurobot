@@ -3,18 +3,20 @@ package emurobot
 import (
 	"os"
 
-	api "emurobot/pkg/api"
-
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
 const CURRENT_VERSION = "1.0.0"
 
+type GlobalConfig struct {
+	Config Config `yaml:"emurobot"`
+}
+
 type Config struct {
 	Version    string   `yaml:"version"`
 	BufferSize int      `yaml:"buffer_size"`
-	Devices    []Device `yaml:"devices"`
+	Devices    []Device `yaml:"serial"`
 }
 
 type Device struct {
@@ -26,7 +28,7 @@ type Device struct {
 }
 
 func ReadConfig(path string) Config {
-	var out Config
+	var cfg GlobalConfig
 
 	// Read file
 	data, err := os.ReadFile(path)
@@ -35,14 +37,10 @@ func ReadConfig(path string) Config {
 	}
 
 	// Parse
-	err = yaml.Unmarshal(data, &out)
+	err = yaml.Unmarshal(data, &cfg)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	if !api.IsSupportedVersion(out.Version, CURRENT_VERSION) {
-		log.Errorf("Config file version %s not supported (current version %s)", out.Version, CURRENT_VERSION)
-	}
-
-	return out
+	return cfg.Config
 }

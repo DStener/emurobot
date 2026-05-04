@@ -67,7 +67,7 @@ func runGhostCopy(dev emurobot.Device, buffer_size int) {
 			log.Fatalf("Read error: %s", err)
 		}
 
-		log.Info("TEST ", stream)
+		// log.Info("TEST ", stream)
 
 		// Event logging
 		emurobot.AddEvent(
@@ -77,11 +77,11 @@ func runGhostCopy(dev emurobot.Device, buffer_size int) {
 			FLAG_IS_RECORDING,
 		)
 
-		// // Write to ghost port
-		// _, err = ghost.Write(stream)
-		// if err != nil {
-		// 	log.Fatal(err)
-		// }
+		// Write to ghost port
+		_, err = ghost.Write(stream)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 }

@@ -123,7 +123,7 @@ func AddEvent(dump *LogDump, data string, time time.Duration, flag_to_log bool) 
 	// Add event to buffer
 	buf.Push(event)
 
-	// log.Info("ADD_EVENT: ", event)
+	log.Info("ADD_EVENT: ", event)
 
 	// If there really is real logging going on
 	if flag_to_log {

@@ -40,8 +40,8 @@ func CreateDevice(dev string) (string, string) {
 
 	// Configure args
 	args := []string{
-		fmt.Sprintf("PTY,link=%s", input),
-		fmt.Sprintf("PTY,link=%s", output),
+		fmt.Sprintf("PTY,link=%s,raw,mode=666", input),
+		fmt.Sprintf("PTY,link=%s,raw,mode=666", output),
 	}
 
 	// Build command

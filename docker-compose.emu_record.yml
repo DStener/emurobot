@@ -7,7 +7,7 @@ services:
     command: sim_dev
     privileged: true
     environment:
-      - DEVICE_COUNT=3
+      - DEVICE_COUNT=1
       - DEFAULT_SPEED=9600
       - TIME_DILATION=200 # for debug
     volumes:

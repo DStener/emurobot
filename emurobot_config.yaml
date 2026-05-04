@@ -1,7 +1,0 @@
-version: 1.0.0
-buffer_size: 18
-devices: 
-  - input: /dev/ttyUSB-temperature
-    output: /dev/ttyUSB-temperature_VIRT
-    speed: 9600
-    size: 8
