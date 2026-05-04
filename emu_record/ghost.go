@@ -10,7 +10,7 @@ import (
 	"github.com/tarm/serial"
 )
 
-func runGhostCopy(dev emurobot.Device) {
+func runGhostCopy(dev emurobot.Device, buffer_size int) {
 
 	// Init log structure
 	dump := emurobot.InitDevLog(dev)
@@ -38,7 +38,7 @@ func runGhostCopy(dev emurobot.Device) {
 	}
 
 	// Create buffer
-	stream := make([]byte, dev.Size*2)
+	stream := make([]byte, buffer_size)
 
 	// Open all ports
 	input, err := serial.OpenPort(&inputConfig)
@@ -55,12 +55,10 @@ func runGhostCopy(dev emurobot.Device) {
 
 	// Main loop
 	for {
-		var n int
-
 		start := time.Now()
 
 		// Read from real port
-		n, err = input.Read(stream)
+		_, err = input.Read(stream)
 		if err != nil {
 			// If the buffer does nоt print anything, just wait.
 			if err == io.EOF {
@@ -69,19 +67,21 @@ func runGhostCopy(dev emurobot.Device) {
 			log.Fatalf("Read error: %s", err)
 		}
 
+		log.Info("TEST ", stream)
+
 		// Event logging
 		emurobot.AddEvent(
 			dump,
-			string(stream[:n]),
+			string(stream),
 			time.Since(start),
 			FLAG_IS_RECORDING,
 		)
 
-		// Write to ghost port
-		n, err = ghost.Write(stream[:n])
-		if err != nil {
-			log.Fatal(err)
-		}
+		// // Write to ghost port
+		// _, err = ghost.Write(stream)
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
 	}
 
 }

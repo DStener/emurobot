@@ -47,7 +47,7 @@ func main() {
 		dev.GhostInput = input
 
 		// Run main logic
-		go runGhostCopy(dev)
+		go runGhostCopy(dev, config.BufferSize)
 	}
 
 	for {

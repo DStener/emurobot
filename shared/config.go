@@ -12,8 +12,9 @@ import (
 const CURRENT_VERSION = "1.0.0"
 
 type Config struct {
-	Version string   `yaml:"version"`
-	Devices []Device `yaml:"devices"`
+	Version    string   `yaml:"version"`
+	BufferSize int      `yaml:"buffer_size"`
+	Devices    []Device `yaml:"devices"`
 }
 
 type Device struct {

@@ -26,7 +26,7 @@ type LogEvent struct {
 	Data string        `json:"data"`
 }
 
-var dumps = make([]*LogDump, 0)
+var dumps []*LogDump
 var buffers = make(map[string]*rb.RingBuffer)
 
 var DUMPS_DIR = api.GetEnvOrDefault[string]("EMU_DUMPS_DIR", "/var/log/emudump")
@@ -123,8 +123,13 @@ func AddEvent(dump *LogDump, data string, time time.Duration, flag_to_log bool) 
 	// Add event to buffer
 	buf.Push(event)
 
+	// log.Info("ADD_EVENT: ", event)
+
 	// If there really is real logging going on
 	if flag_to_log {
+
+		log.Info("ADD_EVENT FLAG: ", event)
+
 		// If it first event, fill log from buffer
 		if len(dump.Events) == 0 {
 			for {
