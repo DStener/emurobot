@@ -70,8 +70,8 @@ func SaveDumps() {
 		log.Errorf("JSON Marshal error: %s", err)
 	}
 
-	// Open file
-	err = os.WriteFile(filepath.Join(dir, file), []byte(data), 0644)
+	// Write file
+	err = os.WriteFile(filepath.Join(dir, file), []byte(data), 0666)
 	if err != nil {
 		log.Error("Bad  attempt write to file:", err)
 	}

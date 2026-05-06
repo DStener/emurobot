@@ -37,9 +37,6 @@ func runGhostCopy(dev emurobot.Device, buffer_size int) {
 		Size:        8,
 	}
 
-	// Create buffer
-	stream := make([]byte, buffer_size)
-
 	// Open all ports
 	input, err := serial.OpenPort(&inputConfig)
 	if err != nil {
@@ -53,11 +50,15 @@ func runGhostCopy(dev emurobot.Device, buffer_size int) {
 	}
 	defer ghost.Close()
 
+	// Create buffer
+	stream := make([]byte, buffer_size)
+
 	// Main loop
 	for {
-		var n int
 
 		start := time.Now()
+
+		var n int
 
 		// Read from real port
 		n, err = input.Read(stream)
