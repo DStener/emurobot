@@ -76,6 +76,10 @@ func SaveDumps() {
 		log.Error("Bad  attempt write to file:", err)
 	}
 
+	// Clear buffer
+	for _, dump := range dumps {
+		dump.Events = make([]LogEvent, 0)
+	}
 }
 
 // Load dumps form current file
@@ -123,12 +127,12 @@ func AddEvent(dump *LogDump, data string, time time.Duration, flag_to_log bool) 
 	// Add event to buffer
 	buf.Push(event)
 
-	log.Info("ADD_EVENT: ", event)
+	// log.Info("ADD_EVENT: ", event)
 
 	// If there really is real logging going on
 	if flag_to_log {
 
-		log.Info("ADD_EVENT FLAG: ", event)
+		// log.Info("ADD_EVENT FLAG: ", event)
 
 		// If it first event, fill log from buffer
 		if len(dump.Events) == 0 {

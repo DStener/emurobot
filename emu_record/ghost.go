@@ -55,10 +55,12 @@ func runGhostCopy(dev emurobot.Device, buffer_size int) {
 
 	// Main loop
 	for {
+		var n int
+
 		start := time.Now()
 
 		// Read from real port
-		_, err = input.Read(stream)
+		n, err = input.Read(stream)
 		if err != nil {
 			// If the buffer does nоt print anything, just wait.
 			if err == io.EOF {
@@ -72,13 +74,13 @@ func runGhostCopy(dev emurobot.Device, buffer_size int) {
 		// Event logging
 		emurobot.AddEvent(
 			dump,
-			string(stream),
+			string(stream[:n]),
 			time.Since(start),
 			FLAG_IS_RECORDING,
 		)
 
 		// Write to ghost port
-		_, err = ghost.Write(stream)
+		n, err = ghost.Write(stream[:n])
 		if err != nil {
 			log.Fatal(err)
 		}
