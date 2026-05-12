@@ -28,3 +28,15 @@ services:
     volumes:
       - ./:/app:rw  
       - /dev:/dev:rw
+  camera-recorder:
+    build: ./camera_recorder
+    container_name: camera-recorder
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    devices:
+      - /dev/video10:/dev/video10:rw
+    volumes:
+      - ./recordings:/recordings
+    depends_on:
+      - camera-bridge
