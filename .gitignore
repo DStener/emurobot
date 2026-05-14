@@ -1,8 +1,12 @@
 build/
 .vscode/
 dumps/
+recordings/
 
 
 # Web interface
 web/node_modules
 web/dist
+
+# Temporary addition
+web_service/static 

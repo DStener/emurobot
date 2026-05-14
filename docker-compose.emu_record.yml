@@ -12,7 +12,6 @@ services:
       - TIME_DILATION=200 # for debug
     volumes:
       - /dev:/dev:rw
-  
   emu_record:
     build: .
     command: emu_record
@@ -20,23 +19,22 @@ services:
     ports:
       - 7000:7000
     environment:
-      - EMU_SIGNAL_ADDRESS=:7000
-      - EMU_CONFIG_PATH=/app/example_config.yaml
-      - EMU_DUMPS_DIR=/app/dumps
+       - EMU_SIGNAL_ADDRESS=:7000
+       - EMU_CONFIG_PATH=/app/example_config.yaml
+       - EMU_DUMPS_DIR=/app/dumps
+       - CAMERA_RECORDER_URL=http://camera-recorder:8080
     depends_on:
-      - sim_dev
+       - sim_dev
+       - camera-recorder
     volumes:
-      - ./:/app:rw  
-      - /dev:/dev:rw
+       - ./:/app:rw
+       - /dev:/dev:rw 
   camera-recorder:
     build: ./camera_recorder
     container_name: camera-recorder
     restart: unless-stopped
     ports:
       - "8090:8080"
-    devices:
-      - /dev/video10:/dev/video10:rw
     volumes:
+      - /dev:/dev
       - ./recordings:/recordings
-    depends_on:
-      - camera-bridge

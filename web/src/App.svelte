@@ -7,10 +7,19 @@
   let logs = JSON.parse(localStorage.getItem('logs')) || [];
   // let logs = [];
   let isRecording = false;
+  let hostname = 'Loading...'
 
   const startRecording = () => {
     isRecording = true;
   };
+
+  const fetchHostname = () =>
+  fetch('/api/hostname')
+    .then(r => r.ok ? r.json() : Promise.reject(`HTTP error: ${r.status}`))
+    .then(({ Message }) => hostname = Message)
+    .catch(() => hostname = 'Error loading');
+
+  fetchHostname();  
 
   const stopRecording = () => {
     const newLog = {
@@ -36,7 +45,7 @@
       <i class="fas fa-robot fa-3x text-primary"></i>
     </div>
     <div class="title-and-status">
-      <h1 class="display-4 mb-0">Robot</h1>
+      <h1 class="display-4 mb-0">{hostname}</h1>
       <div class="online-status mt-2">
         <span class="status-circle"></span>
         Онлайн

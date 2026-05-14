@@ -6,6 +6,7 @@ services:
     ports:
       - 7000:7000
     environment:
+      - HOST_HOSTNAME=${HOSTNAME}
       - EMU_SIGNAL_ADDRESS=:7000
       - EMU_CONFIG_PATH=/app/example_config.yaml
       - EMU_DUMPS_DIR=/app/dumps

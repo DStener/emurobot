@@ -21,6 +21,8 @@ type Confirmation struct {
 
 const METHOD_PATH = "/api/run"
 
+var EMU_STATIC_PATH string = GetEnvOrDefault[string]("EMU_STATIC_PATH", "static")
+var HOST_HOSTNAME string = GetEnvOrDefault[string]("HOST_HOSTNAME", "Robot")
 var SIGNAL_ADDRESS string = GetEnvOrDefault[string]("EMU_SIGNAL_ADDRESS", ":7000")
 
 func messageHandler(response http.ResponseWriter, request *http.Request) {
@@ -95,10 +97,42 @@ func SendCommand(command string, args []string) (string, error) {
 	return serverConf.Message, nil
 }
 
+func hostnameHandler(response http.ResponseWriter, request *http.Request) {
+	if request.Method != "GET" {
+		http.Error(response, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Config response
+	response.Header().Set("Content-Type", "application/json")
+	// Send response
+	json.NewEncoder(response).Encode(Confirmation{
+		Message: HOST_HOSTNAME,
+	})
+}
+
 func InitServer() {
 	// Set path for command run
 	http.HandleFunc(METHOD_PATH, messageHandler)
+	http.HandleFunc("/api/hostname", hostnameHandler)
 
 	log.Printf("Server starting on %s", SIGNAL_ADDRESS)
 	log.Fatal(http.ListenAndServe(SIGNAL_ADDRESS, nil))
+}
+
+// TODO: Merge with InitServer()
+func InitServerWithWeb() {
+	// Creating a multiplexer for routing
+	mux := http.NewServeMux()
+
+	// Set path for command run
+	mux.HandleFunc(METHOD_PATH, messageHandler)
+	mux.HandleFunc("/api/hostname", hostnameHandler)
+
+	// For static file
+	staticHandler := http.StripPrefix("/", http.FileServer(http.Dir(EMU_STATIC_PATH)))
+	mux.Handle("/", staticHandler)
+
+	log.Printf("Server starting on %s", SIGNAL_ADDRESS)
+	log.Fatal(http.ListenAndServe(SIGNAL_ADDRESS, mux))
 }
