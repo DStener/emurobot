@@ -1,3 +1,13 @@
+FROM golang:1.18 AS builder
+
+WORKDIR /src
+
+COPY go.mod .
+COPY main.go .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o camera-bridge .
+
+
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -6,7 +16,12 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ffmpeg \
         v4l-utils \
-        ca-certificates && \
+        ca-certificates \
+        kmod && \
     rm -rf /var/lib/apt/lists/*
 
-ENTRYPOINT ["ffmpeg"]
+WORKDIR /app
+
+COPY --from=builder /src/camera-bridge /app/camera-bridge
+
+ENTRYPOINT ["/app/camera-bridge"]

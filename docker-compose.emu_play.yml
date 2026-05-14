@@ -17,9 +17,9 @@ services:
       container_name: camera-bridge
       restart: always
       privileged: true
-      devices:
-        - /dev/video0:/dev/video0:rw
-        - /dev/video10:/dev/video10:rw
+      volumes:
+      - /dev:/dev
+      - /lib/modules:/lib/modules:ro
       command:
       - -hide_banner
       - -loglevel
@@ -41,3 +41,4 @@ services:
       - -f
       - v4l2
       - /dev/video10
+    
