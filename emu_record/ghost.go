@@ -6,6 +6,8 @@ import (
 
 	emurobot "emurobot/shared"
 
+	api "emurobot/pkg/api"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/tarm/serial"
 )
@@ -77,7 +79,7 @@ func runGhostCopy(dev emurobot.Device, buffer_size int) {
 			dump,
 			string(stream[:n]),
 			time.Since(start),
-			FLAG_IS_RECORDING,
+			api.IsRecording(),
 		)
 
 		// Write to ghost port

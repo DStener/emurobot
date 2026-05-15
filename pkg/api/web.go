@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -111,10 +112,23 @@ func hostnameHandler(response http.ResponseWriter, request *http.Request) {
 	})
 }
 
+func isRecordingHandler(response http.ResponseWriter, request *http.Request) {
+	if request.Method != "GET" {
+		http.Error(response, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Config response
+	response.Header().Set("Content-Type", "application/json")
+	// Send response
+	json.NewEncoder(response).Encode(Confirmation{
+		Message: strconv.FormatBool(!IsRecording()),
+	})
+}
+
 func InitServer() {
 	// Set path for command run
 	http.HandleFunc(METHOD_PATH, messageHandler)
-	http.HandleFunc("/api/hostname", hostnameHandler)
 
 	log.Printf("Server starting on %s", SIGNAL_ADDRESS)
 	log.Fatal(http.ListenAndServe(SIGNAL_ADDRESS, nil))
@@ -127,7 +141,9 @@ func InitServerWithWeb() {
 
 	// Set path for command run
 	mux.HandleFunc(METHOD_PATH, messageHandler)
+
 	mux.HandleFunc("/api/hostname", hostnameHandler)
+	mux.HandleFunc("/api/rec/status", isRecordingHandler)
 
 	// For static file
 	staticHandler := http.StripPrefix("/", http.FileServer(http.Dir(EMU_STATIC_PATH)))

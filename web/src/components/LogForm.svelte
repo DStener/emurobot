@@ -4,12 +4,27 @@
   const dispatch = createEventDispatcher();
 
   export let isRecording = false;
+  export let isConnected = false; // Добавляем флаг подключения
   let recordTime = '00:00:00'; // Таймер записи
+
+  const fetchIsRecording = () =>
+  fetch('/api/rec/status')
+    .then(r => r.ok ? r.json() : Promise.reject(`HTTP error: ${r.status}`))
+    .then(({ Message }) => {
+      isConnected = true
+      if (Boolean(Message)) {
+        startRecording()
+      }
+    });
+
+  fetchIsRecording();  
+
 
   // Имитация отсчёта времени (в реальном проекте можно заменить на точный таймер)
   let timer;
 
   function startRecording() {
+    if (!isConnected) return; // Защита: не начинать запись, если нет подключения
     isRecording = true;
     recordTime = '00:00:00';
     timer = setInterval(() => {
@@ -17,7 +32,7 @@
       const minutes = parseInt(recordTime.substring(3, 5)) + Math.floor(seconds / 60);
       const hours = parseInt(recordTime.substring(0, 2)) + Math.floor(minutes / 60);
 
-      recordTime = 
+      recordTime =
         String(hours % 24).padStart(2, '0') + ':' +
         String(minutes % 60).padStart(2, '0') + ':' +
         String(seconds % 60).padStart(2, '0');
@@ -35,22 +50,23 @@
   <div class="d-flex align-items-center gap-5">
     {#if isRecording}
       <span class="text-danger fw-bold">
-        Запись… 
+        Запись…
         <small class="ms-2 text-muted">{recordTime}</small>
       </span>
       <div class="indicator recording"></div>
-      <button 
-        class="btn btn-danger" 
+      <button
+        class="btn btn-danger"
         on:click={stopRecording}
         title="Остановить запись лога"
       >
         Остановить запись
       </button>
     {:else}
-      <button 
-        class="btn btn-success" 
+      <button
+        class="btn btn-success"
         on:click={startRecording}
         title="Начните запись лога действий"
+        disabled={!isConnected}
       >
         Начать запись
       </button>
@@ -112,6 +128,15 @@
   .btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Стили для отключённой кнопки */
+  .btn:disabled {
+    background-color: #6c757d;
+    color: #e9ecef;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
   }
 
   .text-danger {
