@@ -2,12 +2,10 @@ package main
 
 import (
 	"fmt"
-	"os"
 
-	api "emurobot/pkg/api"
+	// api "emurobot/pkg/api"
+
 	emurobot "emurobot/shared"
-
-	log "github.com/sirupsen/logrus"
 )
 
 var Config emurobot.Config
@@ -20,27 +18,27 @@ func PlayRecord(args []string) (string, error) {
 }
 
 func main() {
-	// Check permission
-	if os.Geteuid() != 0 {
-		log.Fatal("Root permissions are missing")
-	}
+	// // Check permission
+	// if os.Geteuid() != 0 {
+	// 	log.Fatal("Root permissions are missing")
+	// }
 
-	go api.InitServer()
+	// go api.InitServer()
 
-	// Connect to signals
-	api.Connect(api.CMD_PLAY_RECORD, PlayRecord)
+	// // Connect to signals
+	// api.Connect(api.CMD_PLAY_RECORD, PlayRecord)
 
-	// Load config
-	path := api.GetEnvOrDefault[string]("EMU_CONFIG_PATH", "/etc/emu_config.yaml")
-	Config = emurobot.ReadConfig(path)
+	// // Load config
+	// path := emu.GetEnvOrDefault[string]("EMU_CONFIG_PATH", "/etc/emu_config.yaml")
+	// Config = emurobot.ReadConfig(path)
 
-	for _, dev := range Config.Devices {
-		// Create device
-		input, _ := emurobot.CreateDevice(dev.Output)
-		dev.GhostInput = input
-	}
+	// for _, dev := range Config.Devices {
+	// 	// Create device
+	// 	input, _ := emurobot.CreateDevice(dev.Output)
+	// 	dev.GhostInput = input
+	// }
 
-	for {
+	// for {
 
-	}
+	// }
 }

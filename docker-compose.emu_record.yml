@@ -1,5 +1,4 @@
 services:
-
   # Just create device for simulate real Serial-port 
   # with random output and 9600 b/s speed
   sim_dev:
@@ -19,22 +18,14 @@ services:
     ports:
       - 7000:7000
     environment:
-       - EMU_SIGNAL_ADDRESS=:7000
+       - EMU_ADDRESS=:7000
        - EMU_CONFIG_PATH=/app/example_config.yaml
        - EMU_DUMPS_DIR=/app/dumps
+       - EMU_STATIC_PATH=/app/web/dist
        - CAMERA_RECORDER_URL=http://camera-recorder:8080
     depends_on:
        - sim_dev
-       - camera-recorder
     volumes:
        - ./:/app:rw
        - /dev:/dev:rw 
-  camera-recorder:
-    build: ./camera_recorder
-    container_name: camera-recorder
-    restart: unless-stopped
-    ports:
-      - "8090:8080"
-    volumes:
-      - /dev:/dev
-      - ./recordings:/recordings
+

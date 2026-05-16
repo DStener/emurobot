@@ -1,49 +1,89 @@
 <script>
   import { createEventDispatcher } from 'svelte';
+  import { actionFunction } from './store.js';
+
 
   const dispatch = createEventDispatcher();
 
   export let isRecording = false;
-  export let isConnected = false; // Добавляем флаг подключения
-  let recordTime = '00:00:00'; // Таймер записи
+  export let isConnected = false; // Флаг подключения
 
+  // Функция для проверки статуса записи
   const fetchIsRecording = () =>
-  fetch('/api/rec/status')
-    .then(r => r.ok ? r.json() : Promise.reject(`HTTP error: ${r.status}`))
-    .then(({ Message }) => {
-      isConnected = true
-      if (Boolean(Message)) {
-        startRecording()
+    fetch('/api/rec/status')
+      .then(r => r.ok ? r.json() : Promise.reject(`HTTP error: ${r.status}`))
+      .then(({message}) => {
+        isConnected = true;
+        isRecording = (message == "true");
+      })
+      .catch(err => {
+        console.error('Error fetching recording status:', err);
+        isConnected = false;
+      });
+
+  fetchIsRecording();
+
+  // Функция запуска записи с отправкой POST-запроса
+  async function startRecording() {
+    if (!isConnected) {
+      console.warn('Cannot start recording: not connected to server');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/rec/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
       }
-    });
 
-  fetchIsRecording();  
-
-
-  // Имитация отсчёта времени (в реальном проекте можно заменить на точный таймер)
-  let timer;
-
-  function startRecording() {
-    if (!isConnected) return; // Защита: не начинать запись, если нет подключения
-    isRecording = true;
-    recordTime = '00:00:00';
-    timer = setInterval(() => {
-      const seconds = parseInt(recordTime.substring(6)) + 1;
-      const minutes = parseInt(recordTime.substring(3, 5)) + Math.floor(seconds / 60);
-      const hours = parseInt(recordTime.substring(0, 2)) + Math.floor(minutes / 60);
-
-      recordTime =
-        String(hours % 24).padStart(2, '0') + ':' +
-        String(minutes % 60).padStart(2, '0') + ':' +
-        String(seconds % 60).padStart(2, '0');
-    }, 1000);
+      // Обновляем статус записи после успешного запроса
+      isRecording = true;
+      dispatch('recordingStarted'); // Опционально: отправляем событие
+    } catch (err) {
+      console.error('Error starting recording:', err);
+      // Можно добавить UI-уведомление об ошибке
+    }
   }
 
-  function stopRecording() {
-    isRecording = false;
-    clearInterval(timer);
+  // Функция остановки записи с отправкой POST-запроса
+  async function stopRecording() {
+    if (!isConnected) {
+      console.warn('Cannot stop recording: not connected to server');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/rec/stop', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
+      }
+
+      // Обновляем статус записи после успешного запроса
+      isRecording = false;
+      dispatch('recordingStopped'); // Опционально: отправляем событие
+      
+      $actionFunction()
+
+
+    } catch (err) {
+      console.error('Error stopping recording:', err);
+      // Можно добавить UI-уведомление об ошибке
+    }
   }
 </script>
+
 
 <div class="log-container">
   <h6>Запись лога</h6>
@@ -51,7 +91,6 @@
     {#if isRecording}
       <span class="text-danger fw-bold">
         Запись…
-        <small class="ms-2 text-muted">{recordTime}</small>
       </span>
       <div class="indicator recording"></div>
       <button

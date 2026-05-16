@@ -1,328 +1,51 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"os"
-	"strings"
-	"time"
-	"errors"
-	"os/exec"
-	"sync"
-	"syscall"
 
-	api "emurobot/pkg/api"
-	emurobot "emurobot/shared"
+	emu "emurobot/shared"
 
 	log "github.com/sirupsen/logrus"
 )
 
-
-const (
-	inputCamera   = "/dev/video0"
-	virtualCamera = "/dev/video10"
-
-	recordDir = "/recordings"
-
-	videoSize   = "640x480"
-	fps         = "5"
-	inputFormat = "yuyv422"
-)
-
-var (
-	mu sync.Mutex
-
-	bridgeCmd *exec.Cmd
-
-	recordCmd  *exec.Cmd
-	recordFile string
-	recordDone chan error
-)
-
-func StartRecord(args []string) (string, error) {
-	log.Info("start record command received")
-	
-	api.SetRecording(true)
-
-	startRecordingCamera()
-
-	log.Info("recording started")
-
-	return "OK", nil
-}
-
-func StopRecord(args []string) (string, error) {
-	log.Info("stop record command received")
-
-	api.SetRecording(false)
-
-	emurobot.SaveDumps()
-
-	stopRecordingCamera()
-
-	log.Info("recording stopped")
-
-	return "OK", nil
-}
-
-func callCameraRecorder(path string) error {
-	baseURL := getEnv("CAMERA_RECORDER_URL", "http://camera-recorder:8080")
-	url := strings.TrimRight(baseURL, "/") + path
-
-	client := http.Client{
-		Timeout: 5 * time.Second,
-	}
-
-	resp, err := client.Post(url, "text/plain", nil)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("camera-recorder returned status: %s", resp.Status)
-	}
-
-	return nil
-}
-
-func getEnv(name string, fallback string) string {
-	value := os.Getenv(name)
-	if value == "" {
-		return fallback
-	}
-
-	return value
-}
+var EMU_CONFIG_PATH = emu.GetEnv("EMU_CONFIG_PATH", "/etc/emurobot/config.yaml")
+var EMU_STATIC_PATH = emu.GetEnv("EMU_STATIC_PATH", "static")
+var EMU_HOSTNAME = emu.GetEnv("EMU_HOSTNAME", "Robot")
+var EMU_ADDRESS = emu.GetEnv("EMU_ADDRESS", ":7000")
+var EMU_DUMPS_DIR = emu.GetEnv("EMU_DUMPS_DIR", "/var/log/emudump")
 
 func main() {
+	// Check root permissions
 	if os.Geteuid() != 0 {
 		log.Fatal("Root permissions are missing")
 	}
 
-	if err := ensureVirtualCamera(); err != nil {
+	config := emu.ReadConfig(EMU_CONFIG_PATH)
+
+	// Init serial-port infrastructure
+	if err := InitSerial(config); err != nil {
 		log.Fatal(err)
 	}
 
-	if err := startBridge(); err != nil {
+	// Init camera infrastructure
+	if err := InitCamera(config); err != nil {
 		log.Fatal(err)
 	}
 
-	go api.InitServerWithWeb()
+	http.HandleFunc("/api/hostname", hostnameHandler)
+	http.HandleFunc("/api/dumps", getDumpsListHandler)
 
-	api.Connect(api.CMD_START_RECORD, StartRecord)
-	api.Connect(api.CMD_STOP_RECORD, StopRecord)
+	http.HandleFunc("/api/rec/start", startRecordingHandler)
+	http.HandleFunc("/api/rec/stop", stopRecordingHandler)
+	http.HandleFunc("/api/rec/status", isRecordingHandler)
 
-	path := api.GetEnvOrDefault[string]("EMU_CONFIG_PATH", "/etc/emu_config.yaml")
-	config := emurobot.ReadConfig(path)
+	// For static file
+	staticHandler := http.StripPrefix("/", http.FileServer(http.Dir(EMU_STATIC_PATH)))
+	http.Handle("/", staticHandler)
 
-	for _, dev := range config.Devices {
-		input, _ := emurobot.CreateDevice(dev.Output)
-		dev.GhostInput = input
+	log.Printf("Server starting on %s", EMU_ADDRESS)
+	log.Fatal(http.ListenAndServe(EMU_ADDRESS, nil))
 
-		go runGhostCopy(dev, config.BufferSize)
-	}
-
-	
-
-	select {}
-}
-
-
-
-func ensureVirtualCamera() error {
-	if _, err := os.Stat(virtualCamera); err == nil {
-		log.Println("/dev/video10 already exists")
-		return nil
-	}
-
-	log.Println("/dev/video10 not found, creating virtual camera")
-
-	cmd := exec.Command(
-		"modprobe",
-		"v4l2loopback",
-		"video_nr=10",
-		"card_label=RobotVirtualCamera",
-		"exclusive_caps=1",
-	)
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-
-	for i := 0; i < 10; i++ {
-		if _, err := os.Stat(virtualCamera); err == nil {
-			log.Println("/dev/video10 created")
-			return nil
-		} else if !errors.Is(err, os.ErrNotExist) {
-			return err
-		}
-
-		time.Sleep(300 * time.Millisecond)
-	}
-
-	return errors.New("/dev/video10 was not created")
-}
-
-func startBridge() error {
-	args := []string{
-		"-hide_banner",
-		"-loglevel", "warning",
-		"-f", "v4l2",
-		"-framerate", fps,
-		"-video_size", videoSize,
-		"-i", inputCamera,
-
-		"-vf", "format=yuyv422",
-		"-vcodec", "rawvideo",
-		"-pix_fmt", "yuyv422",
-		"-f", "v4l2",
-		virtualCamera,
-	}
-
-	cmd := exec.Command("ffmpeg", args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
-
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-
-	bridgeCmd = cmd
-
-	log.Println("camera bridge started:", inputCamera, "->", virtualCamera)
-
-	go func() {
-		err := cmd.Wait()
-		log.Fatal("camera bridge stopped: ", err)
-	}()
-
-	return nil
-}
-
-func startRecordingCamera() {
-
-	mu.Lock()
-	defer mu.Unlock()
-
-	if recordCmd != nil {
-		// fmt.Fprintln(w, "recording already started")
-		return
-	}
-
-	if err := os.MkdirAll(recordDir, 0755); err != nil {
-		// http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	recordFile = fmt.Sprintf(
-		"%s/record_%s.mp4",
-		recordDir,
-		time.Now().Format("2006-01-02_15-04-05"),
-	)
-
-	args := []string{
-		"-hide_banner",
-		"-loglevel", "warning",
-		"-y",
-
-		"-f", "v4l2",
-		"-input_format", inputFormat,
-		"-framerate", fps,
-		"-video_size", videoSize,
-		"-i", virtualCamera,
-
-		"-c:v", "libx264",
-		"-preset", "ultrafast",
-		"-pix_fmt", "yuv420p",
-
-		recordFile,
-	}
-
-	cmd := exec.Command("ffmpeg", args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
-
-	if err := cmd.Start(); err != nil {
-		// http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	recordCmd = cmd
-	recordDone = make(chan error, 1)
-
-	log.Println("recording started:", recordFile)
-
-	go waitRecording(cmd)
-
-	// fmt.Fprintln(w, "recording started")
-}
-
-func stopRecordingCamera() {	
-
-	mu.Lock()
-
-	if recordCmd == nil {
-		mu.Unlock()
-		// fmt.Fprintln(w, "recording is not running")
-		return
-	}
-
-	cmd := recordCmd
-	file := recordFile
-	done := recordDone
-
-	mu.Unlock()
-
-	pgid, err := syscall.Getpgid(cmd.Process.Pid)
-	if err == nil {
-		_ = syscall.Kill(-pgid, syscall.SIGINT)
-	} else {
-		_ = cmd.Process.Signal(os.Interrupt)
-	}
-
-	select {
-	case <-done:
-		log.Println("recording stopped:", file)
-		// fmt.Fprintln(w, "recording stopped")
-
-	case <-time.After(10 * time.Second):
-		_ = cmd.Process.Kill()
-		log.Println("recording killed by timeout:", file)
-		// fmt.Fprintln(w, "recording killed by timeout")
-	}
-}
-
-
-func waitRecording(cmd *exec.Cmd) {
-	err := cmd.Wait()
-
-	mu.Lock()
-	defer mu.Unlock()
-
-	if recordCmd == cmd {
-		recordCmd = nil
-	}
-
-	if err != nil {
-		log.Println("recording ffmpeg stopped with error:", err)
-	} else {
-		log.Println("recording ffmpeg finished normally")
-	}
-
-	if recordDone != nil {
-		recordDone <- err
-		close(recordDone)
-	}
+	// select {}
 }

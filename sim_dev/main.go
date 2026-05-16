@@ -6,17 +6,16 @@ import (
 	"os"
 	"time"
 
+	emu "emurobot/shared"
 	emurobot "emurobot/shared"
-
-	api "emurobot/pkg/api"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tarm/serial"
 )
 
 // Get environment variables
-var DEVICE_COUNT int = api.GetEnvOrDefault[int]("DEVICE_COUNT", 1)
-var DEFAULT_SPEED int = api.GetEnvOrDefault[int]("DEFAULT_SPEED", 9600)
+var DEVICE_COUNT int = emu.GetEnvOrDefault[int]("DEVICE_COUNT", 1)
+var DEFAULT_SPEED int = emu.GetEnvOrDefault[int]("DEFAULT_SPEED", 9600)
 
 func main() {
 	// Check permission
@@ -31,8 +30,8 @@ func main() {
 		duplicate := fmt.Sprintf("/dev/ttyUSB%d_DEBUG", i)
 
 		// Create devices
-		input, _ := emurobot.CreateDevice(dev)
-		input_dupl, _ := emurobot.CreateDevice(duplicate)
+		input, _ := emu.CreateDevice(dev)
+		input_dupl, _ := emu.CreateDevice(duplicate)
 
 		// Fill random data
 		go loopRandomGenerate(input, input_dupl)
@@ -46,8 +45,8 @@ func main() {
 func loopRandomGenerate(dev string, dupl string) {
 
 	// Wait until devise is not exist
-	emurobot.WaitDeviceExist(dev)
-	emurobot.WaitDeviceExist(dupl)
+	emu.WaitDeviceExist(dev)
+	emu.WaitDeviceExist(dupl)
 
 	// Config for opening port
 	outputConfig := serial.Config{

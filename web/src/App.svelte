@@ -16,19 +16,12 @@
   const fetchHostname = () =>
   fetch('/api/hostname')
     .then(r => r.ok ? r.json() : Promise.reject(`HTTP error: ${r.status}`))
-    .then(({ Message }) => hostname = Message)
+    .then(({ message }) => hostname = message)
     .catch(() => hostname = 'Error loading');
 
   fetchHostname();  
 
   const stopRecording = () => {
-    const newLog = {
-      id: Date.now(),
-      date: new Date().toLocaleString(),
-      weight: Math.random() * 100 + 50 // случайный вес для примера
-    };
-    logs = [newLog, ...logs];
-    localStorage.setItem('logs', JSON.stringify(logs));
     isRecording = false;
   };
 
@@ -66,10 +59,7 @@
   </div>
   <div class="row">
     <div class="col-12">
-      <LogsTable
-        {logs}
-        on:delete={deleteLog}
-      />
+      <LogsTable/>
     </div>
   </div>
 </main>

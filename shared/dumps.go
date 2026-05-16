@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"time"
 
-	api "emurobot/pkg/api"
-
 	rb "github.com/floscodes/golang-ringbuffer"
 	log "github.com/sirupsen/logrus"
 )
@@ -29,8 +27,8 @@ type LogEvent struct {
 var dumps []*LogDump
 var buffers = make(map[string]*rb.RingBuffer)
 
-var DUMPS_DIR = api.GetEnvOrDefault[string]("EMU_DUMPS_DIR", "/var/log/emudump")
-var BUFFER_SIZE = api.GetEnvOrDefault[uint]("EMU_BUFFER_SIZE", 5)
+var EMU_DUMPS_DIR = GetEnvOrDefault[string]("EMU_DUMPS_DIR", "/var/log/emudump")
+var BUFFER_SIZE = GetEnvOrDefault[uint]("EMU_BUFFER_SIZE", 5)
 
 // Init structure for logs
 func InitDevLog(dev Device) *LogDump {
@@ -55,8 +53,8 @@ func InitDevLog(dev Device) *LogDump {
 // Save dump to file
 func SaveDumps() {
 	// Get dum dir
-	file := fmt.Sprintf("%s_dumps_SPs.json", time.Now().Format("15_04_05"))
-	dir := filepath.Join(DUMPS_DIR, time.Now().Format("02.01.2006"))
+	file := "serial_ports.json"
+	dir := filepath.Join(EMU_DUMPS_DIR, time.Now().Format("02.01.2006"), time.Now().Format("15_04_05"))
 
 	// Create dump dir
 	err := os.MkdirAll(dir, os.ModePerm)

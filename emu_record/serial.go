@@ -4,22 +4,33 @@ import (
 	"io"
 	"time"
 
-	emurobot "emurobot/shared"
-
-	api "emurobot/pkg/api"
+	emu "emurobot/shared"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tarm/serial"
 )
 
-func runGhostCopy(dev emurobot.Device, buffer_size int) {
+func InitSerial(config emu.Config) error {
+
+	// Create serial-port
+	for _, dev := range config.Devices {
+		input, _ := emu.CreateDevice(dev.Output)
+		dev.GhostInput = input
+
+		go startSerialBridge(dev, config.BufferSize)
+	}
+
+	return nil
+}
+
+func startSerialBridge(dev emu.Device, buffer_size int) {
 
 	// Init log structure
-	dump := emurobot.InitDevLog(dev)
+	dump := emu.InitDevLog(dev)
 
 	// Wait until devise is not exist
-	errIn := emurobot.WaitDeviceExist(dev.GhostInput)
-	errOut := emurobot.WaitDeviceExist(dev.Output)
+	errIn := emu.WaitDeviceExist(dev.GhostInput)
+	errOut := emu.WaitDeviceExist(dev.Output)
 
 	if errIn != nil || errOut != nil {
 		log.Error(errIn, errOut)
@@ -75,11 +86,11 @@ func runGhostCopy(dev emurobot.Device, buffer_size int) {
 		// log.Info("TEST ", stream)
 
 		// Event logging
-		emurobot.AddEvent(
+		emu.AddEvent(
 			dump,
 			string(stream[:n]),
 			time.Since(start),
-			api.IsRecording(),
+			isRecording(),
 		)
 
 		// Write to ghost port

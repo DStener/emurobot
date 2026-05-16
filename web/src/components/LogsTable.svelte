@@ -1,49 +1,59 @@
 <script>
-  import { createEventDispatcher } from 'svelte';
-  import ConfirmModal from './ConfirmModal.svelte';
+  import { actionFunction} from './store.js';
 
-  const dispatch = createEventDispatcher();
-
-  export let logs = [];
-
+  let dumps = [];
   let currentPage = 1;
   const logsPerPage = 15;
-  let showModal = false;
-  let logToDelete = null;
 
-  // Вычисляем общее количество страниц
-  $: totalPages = Math.ceil(logs.length / logsPerPage);
+  // Отдельная функция для загрузки и обработки логов
+  async function loadAndProcessLogs() {
+    try {
+      const response = await fetch('/api/dumps');
 
-  // Получаем логи для текущей страницы
-  $: currentLogs = logs.slice(
-    (currentPage - 1) * logsPerPage,
-    currentPage * logsPerPage
-  );
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
+      }
+
+      // Обновляем данные
+      dumps = await response.json();
+
+      // Пересчитываем зависимые переменные
+      updatePagination();
+    } catch (error) {
+      console.error('Ошибка при запросе:', error);
+    }
+  }
+
+  // Функция для пересчёта пагинации
+  function updatePagination() {
+    // Вычисляем общее количество страниц
+    totalPages = Math.ceil(dumps.length / logsPerPage);
+
+    // Получаем логи для текущей страницы
+    currentLogs = [...dumps].reverse().slice(
+      (currentPage - 1) * logsPerPage,
+      currentPage * logsPerPage
+    );
+  }
+
+   $: $actionFunction = loadAndProcessLogs;
+
+  // Получаем логи при инициализации компонента
+  loadAndProcessLogs();
+
+  // Зависимые переменные (пересчитываются при изменении dumps или currentPage)
+  let totalPages = 0;
+  let currentLogs = [];
+
+  $: if (dumps.length > 0 && currentPage) {
+    updatePagination();
+  }
 
   // Функция перехода на страницу
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) {
       currentPage = page;
     }
-  };
-
-  // Подтверждение удаления лога
-  const confirmDelete = (log) => {
-    logToDelete = log;
-    showModal = true;
-  };
-
-  // Обработка удаления лога (подтверждено)
-  const handleDelete = () => {
-    dispatch('delete', logToDelete.id);
-    showModal = false;
-    logToDelete = null;
-  };
-
-  // Отмена удаления
-  const cancelDelete = () => {
-    showModal = false;
-    logToDelete = null;
   };
 </script>
 
@@ -91,29 +101,19 @@
         <tr>
           <th scope="col">Дата</th>
           <th scope="col">Вес</th>
-          <th scope="col" class="text-end">Действия</th>
         </tr>
       </thead>
       <tbody>
         {#if currentLogs.length > 0}
-          {#each currentLogs as log (log.id)}
+          {#each currentLogs as log}
             <tr>
-              <td>{log.date}</td>
-              <td>{log.weight.toFixed(2)} KB</td>
-              <td class="text-end">
-                <button
-                  class="btn btn-sm btn-outline-danger"
-                  on:click={() => confirmDelete(log)}
-                  aria-label={`Удалить запись от ${log.date}`}
-                >
-                  Удалить
-                </button>
-              </td>
+              <td>{log.path}</td>
+              <td>{log.size} Б</td>
             </tr>
           {/each}
         {:else}
           <tr>
-            <td colspan="3" class="text-center text-muted py-4">
+            <td colspan="2" class="text-center text-muted py-4">
               Записей пока нет
             </td>
           </tr>
@@ -158,14 +158,6 @@
     </ul>
   </nav>
 </div>
-
-<!-- Модальное окно подтверждения удаления -->
-<ConfirmModal
-  show={showModal}
-  log={logToDelete}
-  on:confirm={handleDelete}
-  on:cancel={cancelDelete}
-/>
 
 <style>
   /* Стили для пагинации */
