@@ -4,6 +4,7 @@ import (
 	emu "emurobot/shared"
 	"os"
 	"path/filepath"
+	"time"
 
 	"encoding/json"
 	"net/http"
@@ -62,8 +63,12 @@ func startRecordingHandler(response http.ResponseWriter, request *http.Request) 
 
 	log.Info("start record command received")
 
+	dir := filepath.Join(EMU_DUMPS_DIR, time.Now().Format("02.01.2006"), time.Now().Format("15_04_05"))
+
+	setLogPath(dir)
+
 	setRecording(true)
-	// startRecordingCamera()
+	startRecordingCamera()
 
 	confirmation := Confirmation{
 		Message: "Recording started",
@@ -81,10 +86,12 @@ func stopRecordingHandler(response http.ResponseWriter, request *http.Request) {
 
 	log.Info("stop record command received")
 
-	setRecording(false)
-	emu.SaveDumps()
+	dir := getLogPath()
 
-	// stopRecordingCamera()
+	setRecording(false)
+	emu.SaveDumps(dir)
+
+	stopRecordingCamera()
 
 	confirmation := Confirmation{
 		Message: "Recording stopped",

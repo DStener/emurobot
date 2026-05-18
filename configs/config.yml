@@ -1,0 +1,173 @@
+general:
+  master_host: http://192.168.4.189
+  quic_master_host: 192.168.4.189:80
+  demonstration_mod: false
+  onnx_library_path: "/onnx_lib/libonnxruntime.so.1.17.1"
+mainhub:
+  uuid: cfd82c94-2888-454e-b483-4534673ae1f5
+  host: 0.0.0.0:80
+  loglevel: INFO
+  remote_web_host: http://robot_web_reverse-proxy-web_1:80
+  debug: true
+  master:
+    update_timeout_sec: 60
+    update_timeout_randomize_ms: 5000
+    check_service_interval_sec: 30
+    sync_request_timeout_ms: 15000
+    realtime_request_timeout_ms: 5000
+  temp:
+    measure:
+      # divided by 1.03
+      min_temp_buffer_len: 3
+      count_fails: 5
+      mkn_max_angle: 0.2
+      lower_bound_fail: 27.16 #28.0
+      min_temp_mouth_buffer_len: 5
+      lower_bound_mouth_fail: 25.22 #26.0
+      lower_bound_chin_fail: 25.22 #26.0
+      shift_temp_mouth: 0.25
+      shift_temp_chin: 0.25
+      Belive_interval:
+        belive_interval_max_range_mouth: 1.5 # только для пьяных роботов | на всех в стране чудес
+        belive_interval_max_range_chin: 3.0
+        t: 7.0
+  ai:
+    tf_host: http://tf:8501
+    ai_host: http://ai_engine
+    mouth_Model_path: /models/onnx/model_main_new.onnx
+    onnx_returned_output_number: 1
+  face:
+    face_model_path: /face_models
+  redis:
+    addr: "redis:6379"
+    db: 0
+    stream: "frames"
+    group: "mainhub"
+  db:
+    url_path: /store/store.db
+  fsm:
+    timeouts:
+      min_search_throat_time: 50
+      qr_code_face_on_stand_timeout: 15000
+    mouth:
+      on_stand_bound: 1.06
+      on_stand_bound_temp: 25.22 #26.0
+      on_removed_bound_temp: 25.22 #26.0
+      on_stand_removed: 1.035
+      on_stand_face_min_time: 1
+      on_stand_spin_angle: -0.1
+      on_stand_remove_spin_angle: 0.15
+      on_stand_bound_range: 0.04
+      on_stand_model_bound: -1.0
+      on_stand_model_bound_low: -3.0
+      base_bound: 0.5
+      bound: 0.5
+      bound_min: -40.0
+      bound_max: -41.0
+      move_bound: 0.2
+      true_count: 1
+    sick:
+      propabillity_bound: 0.83 # НОРМ 0.95 ОСОБЕННЫЕ 0.99
+      propabillity_bound_for_bad_temp: 0.83
+      mouth_propolsal_sick_bound: 36.9 #36.569 #37.7 # НОРМ 37.7 ОСОБЕННЫЕ 37.85
+      mouth_sick_by_temp_bound: 37.0 #37.8 # НОРМ 37.8 ОСОБЕННЫЕ 37.95
+      bad_temp_bound: 36.9 #36.375 #37.5 # НОРМ 37.5 ОСОБЕННЫЕ 37.6
+      bad_temp_chin_bound: 37.0 #36.278 #37.4 # НОРМ 37.4 ОСОСБЕННЫЕ 37.5
+      temp_difference_bound: 7.25
+      temp_difference:
+        is_enable: true
+        bound: 7.25
+  dump:
+    face_on_stand: true
+  ban_qr_codes:
+    wait_timeout_sec: 1
+face:
+  loglevel: INFO
+  face_model_path: /face_models
+  cascade_classifier_file: /face_models/haarcascade_frontalface_default.xml
+  emulate: false
+  debug: false
+  host: 0.0.0.0:80
+  mastersync:
+    update_timeout_sec: 5
+  webcam:
+    video_path: /dev/video0
+    buffer_size: 10
+  queue:
+    router_host: tcp://mainhub:5555
+  db:
+    url_path: store.db
+  detector:
+    is_bound_frame_enable: true
+    approuch_point_1: 0,0
+    approuch_point_2: 480,640
+    threshold: 0.2
+    blur: 1
+    lazzy_timers:
+      lazzy_tick_ms: 100
+    preproccessing:
+      threshold_max_bound: 128
+      BlockSize: 5
+  faceban:
+    enable: true
+    timeout: 10
+sickface:
+  webcam:
+    # video_path: /dev/video0
+    video_path: /dev/video10
+sick:
+  loglevel: INFO
+  emulate: false
+  emulate_qr:
+    code: "yLji4M"
+    interval_ms: 20000
+  debug: false
+  uuid: ""
+  webcam:
+    video_path: /dev/video2
+    buffer_size: 10
+  redis:
+    addr: "redis:6379"
+    db: 0
+    stream: "frames"
+  db:
+    url_path: postgres://user:admin@db:5432/robot
+  ai:
+    host: http://tf:8501
+    best_mouth_model_path: "/models/onnx/model_251217.onnx"
+    mouth_model_path: "/models/onnx/model_raduga_full.onnx"
+  detector:
+    blur: 0
+    move_bound: 0.0
+    red_level: 0.3
+    lazzy_mod_timeout_ms: 60000
+temp:
+  loglevel: INFO
+  debug: true
+  redis:
+    addr: "redis:6379"
+    password: ""
+    db: 0
+    stream: "frames"
+  filters:
+    koeff_sensor_1: 0.97
+    koeff_sensor_2: 0.97
+    lowpass_filter_scale: 1 1
+  sensors:
+    zero_shift: 2.91333 0 0
+  uart:
+    port: /dev/ttyUSB0_VIRT
+
+emurobot:
+  buffer_size: 18
+  serial:
+    - input: /dev/ttyUSB0
+      output: /dev/ttyUSB0_VIRT
+      speed: 9600
+      size: 8
+
+caries:
+  debug: true
+  threshold: 0.8
+  kafka:
+    bootstrap_servers: kafka

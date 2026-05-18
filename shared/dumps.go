@@ -51,13 +51,12 @@ func InitDevLog(dev Device) *LogDump {
 }
 
 // Save dump to file
-func SaveDumps() {
+func SaveDumps(path string) {
 	// Get dum dir
 	file := "serial_ports.json"
-	dir := filepath.Join(EMU_DUMPS_DIR, time.Now().Format("02.01.2006"), time.Now().Format("15_04_05"))
 
 	// Create dump dir
-	err := os.MkdirAll(dir, os.ModePerm)
+	err := os.MkdirAll(path, os.ModePerm)
 	if err != nil {
 		log.Error("Dont create dir:", err)
 	}
@@ -69,7 +68,7 @@ func SaveDumps() {
 	}
 
 	// Write file
-	err = os.WriteFile(filepath.Join(dir, file), []byte(data), 0666)
+	err = os.WriteFile(filepath.Join(path, file), []byte(data), 0666)
 	if err != nil {
 		log.Error("Bad  attempt write to file:", err)
 	}

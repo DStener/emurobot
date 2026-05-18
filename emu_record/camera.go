@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -157,7 +156,7 @@ func startRecordingCamera() {
 		return
 	}
 
-	dir := filepath.Join(EMU_DUMPS_DIR, time.Now().Format("02.01.2006"), time.Now().Format("15_04_05"))
+	dir := getLogPath()
 
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		// http.Error(w, err.Error(), http.StatusInternalServerError)

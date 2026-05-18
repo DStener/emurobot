@@ -1,0 +1,201 @@
+version: "3.5"
+services:
+  redis:
+    image: eva.ugraphic.ru:5443/redis:latest
+    restart: unless-stopped
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync always
+      --aof-use-rdb-preamble yes
+      --no-appendfsync-on-rewrite yes
+      --aof-load-corrupt-tail-max-size 384
+  reverse-proxy:
+    image: eva.ugraphic.ru:5443/robot-nginx-main:0.3-clip
+    ports:
+      - 8080:80
+    depends_on:
+      - mainhub
+    restart: always
+    healthcheck:
+      test: "curl --fail http://localhost/api/meta || exit 1"
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+  mainhub:
+    image: master.local:5443/robot-mainhub-main:0.3.13-clip-redis
+    command: ./app.bin
+    environment:
+      DEBUG: 0
+      NO_CAMERA: 0
+    volumes:
+      - ./apps/mainhub/dist/img_dumps:/app/img_dumps
+      - ./apps/mainhub/dist/img_dumps_on_stand:/app/img_dumps_on_stand
+      - ./apps/mainhub/dist/store:/store
+      - ./config.yml:/config/config.yml:ro
+      - ./models_others:/models/others:ro
+      - ./tflite_models:/models/tflite:ro
+      - ./face_models:/face_models:ro
+      - ./models_onnx:/models/onnx:ro
+      - ./lib:/onnx_lib:ro
+    restart: always
+    depends_on:
+      - redis
+    healthcheck:
+      test: "curl --fail http://localhost/state | grep started || exit 1"
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+  temp:
+    image: master.local:5443/robot-temperature-main:0.3.13-clip-redis
+    command: ./app.bin
+    environment:
+      TEMP.LOGLEVEL: "INFO"
+      DEBUG: 0
+      NO_SENSOR: 0
+      PORT: 80
+      HOST: "0.0.0.0"
+    privileged: true
+    volumes:
+      - ./apps/temperature/dist:/go/src/app
+      - ./config.yml:/config/config.yml:ro
+      - /dev:/dev:ro
+    depends_on:
+      - redis
+      - mainhub
+      - emurobot_record
+    restart: always
+    ports:
+      - 8083:80
+    healthcheck:
+      test: "curl --fail http://127.0.0.1/api/state | grep true || exit 1"
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+  sick:
+    image: master.local:5443/robot-sickface-main:0.3.13-clip-redis
+    command: ./app.bin
+    environment:
+      OPENBLAS_CORETYPE: "ARMV7"
+      SICK.AI.HOST: "http://tf:8501"
+    volumes:
+      - ./apps/sick/dist:/go/src/app
+      - ./config.yml:/config/config.yml:ro
+      - ./tflite_models:/models/tflite:ro
+      - ./models_others:/models/others:ro
+      - ./lib:/onnx_lib:ro
+      - ./models_onnx:/models/onnx:ro
+      - ./face_models:/face_models:ro
+      - /dev:/dev:ro
+    # devices:
+    #   - /dev/video-sick:/dev/video0
+    privileged: true
+    ports:
+      - 8085:80
+    depends_on:
+      - redis
+      - mainhub
+      - emurobot_record
+    restart: always
+    healthcheck:
+      test: "curl --fail http://127.0.0.1/meta || exit 1"
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 10m
+        max-file: "3"
+  ai:
+    image: eva.ugraphic.ru:5443/robot-ai-main #eva.ugraphic.ru:5443/robot-ai-main:latest-small # eva.ugraphic.ru:5443/robot-ai-main:latest-small
+    ports:
+      - "9080:80"
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+  alloy:
+    image: grafana/alloy:latest
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy         # куда ляжет WAL
+      - --stability.level=experimental         # нужен для loki.write.wal
+      - /etc/alloy/config.alloy
+    environment:
+      - "MASTER_ALLOY_HOST=http://192.168.4.189:4318"
+      - "ROBOT_UUID=1234455"
+      - "DEVICE_NAME=robottest"
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ./alloy/data:/var/lib/alloy
+      - ./alloy/logs:/var/log/app:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "127.0.0.1:4318:4318"
+      - "127.0.0.1:12345:12345"
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+  cpu-monitor:
+    image: nicolargo/glances:ubuntu-latest-full
+    container_name: cpu-monitor
+    restart: unless-stopped
+    pid: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - GLANCES_OPT=--webserver --disable-plugin gpu,sensors,folders
+    ports:
+      - "8123:61208"
+  emurobot_record:
+   build: ./emurobot
+   command: emu_record
+   privileged: true
+   restart: always
+   ports:
+     - 7000:7000
+   environment:
+     - EMU_CONFIG_PATH=/config/config.yml
+     - EMU_ADDRESS=:7000
+     - EMU_DUMPS_DIR=/app/dumps
+     - EMU_HOSTNAME=${HOSTNAME}
+     - EMU_STATIC_PATH=/app/web/dist
+     - CAMERA_RECORDER_URL=http://camera-recorder:8080
+   volumes:
+     - ./config.yml:/config/config.yml:ro
+     - ./apps/mainhub/dist/dumps:/app/dumps
+     - ./emurobot/web/dist:/app/web/dist
+     - /dev:/dev:rw
+     - /lib/modules:/lib/modules:ro
+     - ./recordings:/recordings
+
+  # camera-service:
+  #   build: ./emurobot/camera_service
+  #   container_name: camera-service
+  #   restart: always
+  #   privileged: true
+  #   ports:
+  #     - "8090:8080"
+  #   volumes:
+  #     - /dev:/dev
+  #     - /lib/modules:/lib/modules:ro
+  #     - ./recordings:/recordings
+
