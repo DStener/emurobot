@@ -40,10 +40,6 @@ func InitCamera(config emu.Config) error {
 		return err
 	}
 
-	if err := startBridge(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -107,6 +103,11 @@ func ensureVirtualCamera() error {
 }
 
 func startBridge() error {
+	if bridgeCmd != nil {
+		log.Println("camera bridge already running")
+		return nil
+	}
+
 	args := []string{
 		"-hide_banner",
 		"-loglevel", "warning",
@@ -123,6 +124,7 @@ func startBridge() error {
 	}
 
 	cmd := exec.Command("ffmpeg", args...)
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -140,10 +142,32 @@ func startBridge() error {
 
 	go func() {
 		err := cmd.Wait()
-		log.Fatal("camera bridge stopped: ", err)
+
+		if bridgeCmd == cmd {
+			bridgeCmd = nil
+		}
+
+		log.Println("camera bridge stopped:", err)
 	}()
 
 	return nil
+}
+
+func stopBridge() error {
+	if bridgeCmd == nil {
+		log.Println("camera bridge is not running")
+		return nil
+	}
+
+	cmd := bridgeCmd
+	bridgeCmd = nil
+
+	pgid, err := syscall.Getpgid(cmd.Process.Pid)
+	if err == nil {
+		return syscall.Kill(-pgid, syscall.SIGINT)
+	}
+
+	return cmd.Process.Kill()
 }
 
 func startRecordingCamera() {

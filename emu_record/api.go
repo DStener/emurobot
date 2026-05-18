@@ -56,6 +56,12 @@ func isRecordingHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func startRecordingHandler(response http.ResponseWriter, request *http.Request) {
+	
+	if err := startBridge(); err != nil {
+		http.Error(response, err.Error(), http.StatusInternalServerError)
+		return
+	}	
+	
 	if request.Method != "POST" {
 		http.Error(response, "Use POST", http.StatusMethodNotAllowed)
 		return
@@ -79,6 +85,12 @@ func startRecordingHandler(response http.ResponseWriter, request *http.Request) 
 }
 
 func stopRecordingHandler(response http.ResponseWriter, request *http.Request) {
+	
+	if err := stopBridge(); err != nil {
+		http.Error(response, err.Error(), http.StatusInternalServerError)
+		return
+	}	
+	
 	if request.Method != "POST" {
 		http.Error(response, "Use POST", http.StatusMethodNotAllowed)
 		return
