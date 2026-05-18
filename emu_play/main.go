@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-
 	// api "emurobot/pkg/api"
 
 	emurobot "emurobot/shared"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var Config emurobot.Config
@@ -18,6 +19,12 @@ func PlayRecord(args []string) (string, error) {
 }
 
 func main() {
+	
+	// Init camera infrastructure
+	if err := emurobot.InitCamera(Config); err != nil {
+		log.Fatal(err)
+	}
+	
 	// // Check permission
 	// if os.Geteuid() != 0 {
 	// 	log.Fatal("Root permissions are missing")

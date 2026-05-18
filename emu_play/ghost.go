@@ -1,11 +1,21 @@
 package main
 
 import (
+	"os"
+	"os/exec"
+	"sync"
+	"syscall"
+
 	emurobot "emurobot/shared"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tarm/serial"
+)
+
+var (
+	mu           sync.Mutex
+	videoFileCmd *exec.Cmd
 )
 
 func InitPlayer(path string) (string, error) {
@@ -22,6 +32,76 @@ func InitPlayer(path string) (string, error) {
 
 	return "START", nil
 }
+
+func InitCameraPlayer(path string) (string, error) {
+	
+	args := []string{
+		"-hide_banner",
+		"-loglevel", "warning",
+		"-stream_loop", "-1",
+		"-re",
+		"-i", path,
+		"-vf", "scale=640:480,format=yuyv422",
+		"-vcodec", "rawvideo",
+		"-pix_fmt", "yuyv422",
+		"-f", "v4l2",
+		"/dev/video10",
+	}
+
+	cmd := exec.Command("ffmpeg", args...)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+	}
+
+	if err := cmd.Start(); err != nil {
+		return "ERROR", err
+	}
+
+	videoFileCmd = cmd
+
+	go func() {
+		err := cmd.Wait()
+
+		mu.Lock()
+		defer mu.Unlock()
+
+		if videoFileCmd == cmd {
+			videoFileCmd = nil
+		}
+
+		if err != nil {
+			log.Println("video player stopped:", err)
+		} else {
+			log.Println("video player finished normally")
+		}
+	}()
+
+	log.Println("video player started:", path)
+
+	return "START", nil
+}
+
+func StopCameraPlayer() error {
+	if videoFileCmd == nil {
+		return nil
+	}
+
+	pgid, err := syscall.Getpgid(videoFileCmd.Process.Pid)
+	if err == nil {
+		err = syscall.Kill(-pgid, syscall.SIGINT)
+	} else {
+		err = videoFileCmd.Process.Kill()
+	}
+
+	videoFileCmd = nil
+
+	return err
+}
+
 
 func runGhostPlayer(dump emurobot.LogDump) {
 
