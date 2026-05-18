@@ -29,7 +29,7 @@ func main() {
 	}
 
 	// Init camera infrastructure
-	if err := InitCamera(config); err != nil {
+	if err := emu.InitCamera(config); err != nil {
 		log.Fatal(err)
 	}
 
