@@ -34,7 +34,7 @@ func InitPlayer(path string) (string, error) {
 }
 
 func InitCameraPlayer(path string) (string, error) {
-	
+
 	args := []string{
 		"-hide_banner",
 		"-loglevel", "warning",
@@ -101,7 +101,6 @@ func StopCameraPlayer() error {
 
 	return err
 }
-
 
 func runGhostPlayer(dump emurobot.LogDump) {
 

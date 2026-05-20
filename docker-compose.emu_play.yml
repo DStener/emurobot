@@ -13,3 +13,4 @@ services:
     volumes:
       - ./:/app:rw  
       - /dev:/dev:rw 
+      - /home/robot/robot.v2/apps/mainhub/dist/dumps:/dumps:ro
